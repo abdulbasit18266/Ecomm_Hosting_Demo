@@ -1,31 +1,28 @@
 package com.mobilestore.Abdulbasit.service;
 
-import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class MailService {
 
     @Autowired
-    private JavaMailSender mailSender;
-
-    @Autowired
     private TemplateEngine templateEngine;
 
-    @Value("${spring.mail.username}")
-    private String senderEmail;
+    // Railway variables se uthayega
+    @Value("${RESEND_API_KEY}")
+    private String apiKey;
 
     public void sendOrderEmail(String toEmail, String userName, String productName, String productImage, String totalAmount, String quantity, String address) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
+            // 1. Thymeleaf Context (Wahi purana logic)
             Context context = new Context();
             context.setVariable("userName", userName);
             context.setVariable("productName", productName);
@@ -34,19 +31,32 @@ public class MailService {
             context.setVariable("quantity", quantity);
             context.setVariable("address", address);
 
-            // ✅ Path fixed: Direct templates se file uthayega
             String htmlContent = templateEngine.process("order-confirmation", context);
 
-            helper.setFrom("projectabdulbasit09@gmail.com");
-            helper.setTo(toEmail);
-            helper.setSubject("Order Confirmed! - Mobile Store");
-            helper.setText(htmlContent, true);
+            // 2. API Request Setup
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + apiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            mailSender.send(message);
-            System.out.println("Order Email Sent Successfully to: " + toEmail);
+            // 3. Payload (Resend format)
+            Map<String, Object> body = new HashMap<>();
+            body.put("from", "onboarding@resend.dev"); // Testing ke liye ye default address hai
+            body.put("to", toEmail);
+            body.put("subject", "Order Confirmed! - Mobile Store");
+            body.put("html", htmlContent);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+            // 4. Hit the API
+            ResponseEntity<String> response = restTemplate.postForEntity("https://api.resend.com/emails", entity, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK || response.getStatusCode() == HttpStatus.CREATED) {
+                System.out.println("✅ Email sent successfully via API!");
+            }
 
         } catch (Exception e) {
-            System.err.println("Email Error: " + e.getMessage());
+            System.err.println("❌ API Error: " + e.getMessage());
             e.printStackTrace();
         }
     }
