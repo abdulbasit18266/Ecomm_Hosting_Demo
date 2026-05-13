@@ -37,7 +37,7 @@ public class MailService {
             // ✅ Path fixed: Direct templates se file uthayega
             String htmlContent = templateEngine.process("order-confirmation", context);
 
-            helper.setFrom(senderEmail);
+            helper.setFrom("projectabdulbasit09@gmail.com");
             helper.setTo(toEmail);
             helper.setSubject("Order Confirmed! - Mobile Store");
             helper.setText(htmlContent, true);
