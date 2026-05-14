@@ -15,7 +15,7 @@
         .navbar { padding: 25px 0; background: #ffffff; transition: 0.3s; }
         .navbar-brand { letter-spacing: 2px; font-weight: 700; color: #1A1A1A !important; text-transform: uppercase; }
 
-        /* ✅ HERO SECTION - REAL DUAL TONE GRADIENT */
+        /* ✅ HERO SECTION */
         .hero-section {
             background: linear-gradient(135deg, #E5E5DE 0%, #F5F5F0 100%);
             color: #1A1A1A;
@@ -34,7 +34,7 @@
         }
         .hero-title span { color: #A89880; display: block; }
 
-        /* ✅ SEARCH CONTAINER - HIGH DEPTH SHADOW */
+        /* ✅ SEARCH CONTAINER */
         .search-container {
             background: #ffffff;
             padding: 40px;
@@ -86,6 +86,10 @@
 
         .btn-user-pill { background: #F5F5F0; border: none; border-radius: 50px; padding: 12px 25px; color: #1A1A1A; font-weight: 600; }
 
+        /* Dashboard Button Styling */
+        .btn-dashboard { background: #A89880; color: white; border-radius: 50px; padding: 12px 25px; font-weight: 600; border: none; transition: 0.3s; }
+        .btn-dashboard:hover { background: #8e7f6a; color: white; transform: translateY(-2px); }
+
         /* Sidebar Filter */
         .brand-card { background: #F5F5F0; border-radius: 28px; padding: 30px; border: none; }
         .brand-link { text-decoration: none; color: #666; display: block; padding: 12px 0; font-weight: 500; transition: 0.3s; }
@@ -104,6 +108,13 @@
     <div class="container">
         <a class="navbar-brand fs-4" href="/">Mobile Store</a>
         <div class="ms-auto d-flex align-items-center gap-3">
+
+            <div th:if="${session.user != null and session.user.role == 'ADMIN'}">
+                <a href="/admin/dashboard" class="btn btn-dashboard shadow-sm">
+                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                </a>
+            </div>
+
             <div th:if="${session.user == null}" class="d-flex gap-4">
                 <a href="/login" class="brand-link px-2">Signin</a>
                 <a href="/register" class="btn btn-premium-dark px-4">Get Started</a>
