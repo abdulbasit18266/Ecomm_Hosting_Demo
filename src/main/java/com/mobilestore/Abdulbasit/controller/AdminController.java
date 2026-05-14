@@ -1,34 +1,19 @@
 package com.mobilestore.Abdulbasit.controller;
 
-
-
 import com.mobilestore.Abdulbasit.entity.Order;
-
 import com.mobilestore.Abdulbasit.entity.Product;
-
 import com.mobilestore.Abdulbasit.entity.User;
-
 import com.mobilestore.Abdulbasit.service.OrderService;
-
 import com.mobilestore.Abdulbasit.service.ProductFirestoreService;
-
 import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.stereotype.Controller;
-
 import org.springframework.ui.Model;
-
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import java.util.Map;
 import java.util.stream.Collectors;
-
-
-
-// ... baaki imports same rahenge ...
 
 @Controller
 @RequestMapping("/admin")
@@ -46,23 +31,47 @@ public class AdminController {
     public String adminDashboard(Model model, HttpSession session) {
         if (!isAdmin(session)) return "redirect:/login";
         try {
+            // 1. Fetch Data
             List<Product> products = productService.getAllProducts();
+            List<Order> orders = orderService.getAllOrders();
+
+            // 2. Basic Stats
             model.addAttribute("products", products);
             model.addAttribute("totalProducts", products != null ? products.size() : 0);
-
-            List<Order> orders = orderService.getAllOrders();
             model.addAttribute("totalOrders", orders != null ? orders.size() : 0);
             model.addAttribute("orders", orders);
 
-            // Chart data calculation
-            double revenue = (orders != null) ? orders.stream().filter(o -> o.getTotalAmount() != null).mapToDouble(Order::getTotalAmount).sum() : 0;
+            double revenue = (orders != null) ? orders.stream()
+                    .filter(o -> o.getTotalAmount() != null)
+                    .mapToDouble(Order::getTotalAmount).sum() : 0;
             model.addAttribute("totalRevenue", revenue);
 
+            // 3. GRAPH DATA: Sales Insights (Line Chart)
+            if (orders != null) {
+                List<Double> orderAmounts = orders.stream()
+                        .map(Order::getTotalAmount)
+                        .collect(Collectors.toList());
+                model.addAttribute("orderAmounts", orderAmounts);
+            }
+
+            // 4. GRAPH DATA: Brand Distribution (Doughnut Chart)
+            if (products != null) {
+                long appleCount = products.stream().filter(p -> "Apple".equalsIgnoreCase(p.getBrand())).count();
+                long samsungCount = products.stream().filter(p -> "Samsung".equalsIgnoreCase(p.getBrand())).count();
+                long otherCount = products.size() - (appleCount + samsungCount);
+
+                model.addAttribute("appleCount", appleCount);
+                model.addAttribute("samsungCount", samsungCount);
+                model.addAttribute("otherCount", otherCount);
+            }
+
             return "admin_dashboard";
-        } catch (Exception e) { return "error"; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "error";
+        }
     }
 
-    // ✅ ADD PRODUCT FORM
     @GetMapping("/add-product")
     public String showAddProductForm(Model model, HttpSession session) {
         if (!isAdmin(session)) return "redirect:/login";
@@ -70,20 +79,18 @@ public class AdminController {
         return "add_product";
     }
 
-    // ✅ EDIT PRODUCT FORM (Missing was here)
     @GetMapping("/edit-product/{id}")
     public String showEditProductForm(@PathVariable String id, Model model, HttpSession session) {
         if (!isAdmin(session)) return "redirect:/login";
         try {
             Product product = productService.getProductById(id);
             model.addAttribute("product", product);
-            return "add_product"; // Add aur Edit ke liye ek hi form use kar sakte hain
+            return "add_product";
         } catch (Exception e) {
             return "redirect:/admin/dashboard?error=NotFound";
         }
     }
 
-    // ✅ SAVE / UPDATE PRODUCT
     @PostMapping("/save-product")
     public String saveProduct(@ModelAttribute("product") Product product, HttpSession session) {
         if (!isAdmin(session)) return "redirect:/login";
@@ -95,7 +102,6 @@ public class AdminController {
         }
     }
 
-    // ✅ DELETE PRODUCT (Missing was here)
     @GetMapping("/delete-product/{id}")
     public String deleteProduct(@PathVariable String id, HttpSession session) {
         if (!isAdmin(session)) return "redirect:/login";
