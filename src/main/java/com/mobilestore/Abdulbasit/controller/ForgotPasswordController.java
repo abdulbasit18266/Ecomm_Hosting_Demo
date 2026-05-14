@@ -2,10 +2,9 @@ package com.mobilestore.Abdulbasit.controller;
 
 import com.mobilestore.Abdulbasit.entity.User;
 import com.mobilestore.Abdulbasit.service.UserServices;
+import com.mobilestore.Abdulbasit.service.MailService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +16,11 @@ import java.util.Random;
 @Controller
 public class ForgotPasswordController {
 
-    @Autowired private UserServices userServices;
-    @Autowired private JavaMailSender mailSender; // Email bhejne ke liye
+    @Autowired
+    private UserServices userServices;
+
+    @Autowired
+    private MailService mailService;
 
     // 1. Forgot Password Page dikhana
     @GetMapping("/forgot-password")
@@ -26,7 +28,7 @@ public class ForgotPasswordController {
         return "forgot_password";
     }
 
-    // 2. Email par OTP bhejna
+    // 2. Email par OTP bhejna (Using Resend API via MailService)
     @PostMapping("/forgot-password")
     public String sendOTP(@RequestParam("email") String email, HttpSession session, Model model) {
         User user = userServices.findByEmail(email);
@@ -42,23 +44,15 @@ public class ForgotPasswordController {
         session.setAttribute("otp", otp);
         session.setAttribute("resetEmail", email);
 
-        // Email bhejna
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("Password Reset OTP - Mobile Store");
-
-            // ✅ Time 1 minute set kiya gaya hai
-            message.setText("Your OTP for password reset is: " + otp + "\nValid for 1 minute. Please do not share this code with anyone.");
-
-            mailSender.send(message);
-
+            // ✅ Resend API logic call ho raha hai (Option A enabled in MailService)
+            mailService.sendOTPEmail(email, otp);
             return "verify_otp";
         } catch (Exception e) {
-            model.addAttribute("error", "Error sending email. Try again.");
+            model.addAttribute("error", "Error sending email. Please try again.");
             return "forgot_password";
         }
-    } // ✅ Yeh wala bracket miss tha, maine add kar diya hai.
+    }
 
     // 3. OTP Verify karna
     @PostMapping("/verify-otp")
@@ -77,7 +71,7 @@ public class ForgotPasswordController {
         String email = (String) session.getAttribute("resetEmail");
         if (email != null) {
             userServices.updatePassword(email, newPassword);
-            session.invalidate(); // Clear session after reset
+            session.invalidate(); // Password reset ke baad session clear
             return "redirect:/login?resetSuccess=true";
         }
         return "redirect:/forgot-password";

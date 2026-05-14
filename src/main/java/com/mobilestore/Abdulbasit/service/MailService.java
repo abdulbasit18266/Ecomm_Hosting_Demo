@@ -60,4 +60,31 @@ public class MailService {
             e.printStackTrace();
         }
     }
+
+    // MailService.java mein ye naya method add karo (sendOrderEmail ke niche)
+
+    public void sendOTPEmail(String toEmail, String otp) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + apiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("from", "onboarding@resend.dev");
+
+
+            body.put("to", "projectabdulbasit09@gmail.com");
+
+            body.put("subject", "Password Reset OTP - Mobile Store");
+            body.put("html", "<p>Your OTP for password reset is: <strong>" + otp + "</strong></p><p>Valid for 1 minute.</p>");
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            restTemplate.postForEntity("https://api.resend.com/emails", entity, String.class);
+
+            System.out.println("✅ OTP Sent successfully to verified email!");
+        } catch (Exception e) {
+            System.err.println("❌ OTP API Error: " + e.getMessage());
+        }
+    }
 }
